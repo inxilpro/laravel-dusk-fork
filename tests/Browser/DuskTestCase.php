@@ -7,6 +7,7 @@ use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Illuminate\Support\Collection;
 use Laravel\Dusk\Browser;
+use Laravel\Dusk\Driver\AsyncWebDriverFactory;
 use Laravel\Dusk\TestCase;
 use Orchestra\Testbench\Concerns\CreatesApplication;
 use PHPUnit\Framework\Attributes\BeforeClass;
@@ -65,11 +66,9 @@ class DuskTestCase extends TestCase
             ]);
         })->all());
 
-        return RemoteWebDriver::create(
+        return AsyncWebDriverFactory::make(
             $_ENV['DUSK_DRIVER_URL'] ?? 'http://localhost:9515',
-            DesiredCapabilities::chrome()->setCapability(
-                ChromeOptions::CAPABILITY, $options
-            )
+                DesiredCapabilities::chrome()->setCapability(ChromeOptions::CAPABILITY, $options)
         );
     }
 

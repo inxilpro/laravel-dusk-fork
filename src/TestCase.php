@@ -8,11 +8,12 @@ use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Illuminate\Foundation\Testing\TestCase as FoundationTestCase;
 use Laravel\Dusk\Chrome\SupportsChrome;
 use Laravel\Dusk\Concerns\ProvidesBrowser;
+use Laravel\Dusk\Concerns\ProvidesProxyServer;
 use Laravel\Dusk\Driver\AsyncWebDriverFactory;
 
 abstract class TestCase extends FoundationTestCase
 {
-    use ProvidesBrowser, SupportsChrome;
+    use ProvidesBrowser, ProvidesProxyServer, SupportsChrome;
 
     /**
      * Register the base URL with Dusk.

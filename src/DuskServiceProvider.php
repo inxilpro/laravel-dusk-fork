@@ -2,11 +2,24 @@
 
 namespace Laravel\Dusk;
 
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Dusk\Http\ProxyServer;
+use React\EventLoop\Loop;
 
 class DuskServiceProvider extends ServiceProvider
 {
+    public function register()
+    {
+        $this->app->bind(ProxyServer::class, function($app) {
+            return new ProxyServer(
+                kernel: $app->make(HttpKernel::class),
+                loop: Loop::get(),
+            );
+        });
+    }
+
     /**
      * Bootstrap any package services.
      *
