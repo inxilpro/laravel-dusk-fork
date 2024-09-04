@@ -57,9 +57,13 @@ class AsyncCommandExecutor extends HttpCommandExecutor
         if (is_array($results)) {
             $value = Arr::get($results, 'value');
             $message = Arr::get($results, 'message');
-            $session_id = is_array($value) && array_key_exists('sessionId',
-                $value) ? $value['sessionId'] : $results['sessionId'];
             $status = Arr::get($results, 'status', 0);
+
+            if (is_array($value) && array_key_exists('sessionId', $value)) {
+                $session_id = $value['sessionId'];
+            } elseif (array_key_exists('sessionId', $results)) {
+                $session_id = $results['sessionId'];
+            }
         }
 
         if (is_array($value) && isset($value['error'])) {
@@ -104,9 +108,9 @@ class AsyncCommandExecutor extends HttpCommandExecutor
         return [ $url, $method, $headers, $payload ];
     }
 
-    protected function applyParametersToPath(Collection $parameters, string $url): string
+    protected function applyParametersToPath(Collection $parameters, string $path): string
     {
-        return str_replace($parameters->keys(), $parameters->values(), $url);
+        return str_replace($parameters->keys()->all(), $parameters->values()->all(), $path);
     }
 
     protected function defaultHeaders(string $method): array

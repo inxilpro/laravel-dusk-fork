@@ -182,6 +182,9 @@ class Browser
             $url = static::$baseUrl.'/'.ltrim($url, '/');
         }
 
+        // Force our proxy server — this needs to be improved
+        $url = str_replace(static::$baseUrl, 'http://127.0.0.1:8088', $url);
+
         $this->driver->navigate()->to($url);
 
         // If the page variable was set, we will call the "on" method which will set a

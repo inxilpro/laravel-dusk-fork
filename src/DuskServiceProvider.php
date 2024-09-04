@@ -12,7 +12,7 @@ class DuskServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->app->bind(ProxyServer::class, function($app) {
+        $this->app->singleton(ProxyServer::class, function($app) {
             return new ProxyServer(
                 kernel: $app->make(HttpKernel::class),
                 loop: Loop::get(),

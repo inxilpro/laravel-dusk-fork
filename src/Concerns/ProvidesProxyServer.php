@@ -20,14 +20,7 @@ trait ProvidesProxyServer
     #[Before]
     public function setUpProvidesProxyServer(): void
     {
-        $proxy = null;
-
-        $this->afterApplicationCreated(function() use (&$proxy) {
-            $proxy = app(ProxyServer::class)->listen();
-        });
-
-        $this->beforeApplicationDestroyed(function() use (&$proxy) {
-            $proxy->flush();
-        });
+        $this->afterApplicationCreated(fn() => app(ProxyServer::class)->listen());
+        $this->beforeApplicationDestroyed(fn() => app(ProxyServer::class)->flush());
     }
 }

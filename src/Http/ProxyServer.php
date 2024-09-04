@@ -37,12 +37,16 @@ class ProxyServer
         protected HttpKernel $kernel,
         protected LoopInterface $loop,
         protected string $host = '127.0.0.1',
-        protected int $port = 8089,
+        protected int $port = 8088,
     ) {
     }
 
     public function listen(): static
     {
+        if (isset($this->socket)) {
+            return $this;
+        }
+
         $this->socket = new SocketServer("{$this->host}:{$this->port}", [], $this->loop);
 
         $this->socket->on('connection', function(ConnectionInterface $connection) {
@@ -58,6 +62,7 @@ class ProxyServer
             $this->handleRequest(...));
 
         $server->on('error', function(Exception $exception) {
+            $this->socket->close();
             throw $exception;
         });
 
