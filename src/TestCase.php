@@ -8,6 +8,7 @@ use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Illuminate\Foundation\Testing\TestCase as FoundationTestCase;
 use Laravel\Dusk\Chrome\SupportsChrome;
 use Laravel\Dusk\Concerns\ProvidesBrowser;
+use Laravel\Dusk\Driver\AsyncWebDriverFactory;
 
 abstract class TestCase extends FoundationTestCase
 {
@@ -38,11 +39,11 @@ abstract class TestCase extends FoundationTestCase
     /**
      * Create the RemoteWebDriver instance.
      *
-     * @return \Facebook\WebDriver\Remote\RemoteWebDriver
+     * @return \Facebook\WebDriver\Remote\RemoteWebDriver|\Laravel\Dusk\Driver\AsyncWebDriver
      */
     protected function driver()
     {
-        return RemoteWebDriver::create(
+        return AsyncWebDriverFactory::make(
             $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL') ?? 'http://localhost:9515',
             DesiredCapabilities::chrome()
         );

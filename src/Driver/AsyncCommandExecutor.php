@@ -1,0 +1,126 @@
+<?php
+
+namespace Laravel\Dusk\Driver;
+
+use Facebook\WebDriver\Exception\Internal\LogicException;
+use Facebook\WebDriver\Exception\WebDriverException;
+use Facebook\WebDriver\Remote\HttpCommandExecutor;
+use Facebook\WebDriver\Remote\WebDriverCommand;
+use Facebook\WebDriver\Remote\WebDriverResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\Loop;
+use React\Http\Browser as ReactHttpClient;
+use React\Promise\PromiseInterface;
+
+class AsyncCommandExecutor extends HttpCommandExecutor
+{
+    public function execute(WebDriverCommand $command): WebDriverResponse
+    {
+        $client = new ReactHttpClient();
+
+        [ $url, $method, $headers, $payload ] = $this->extractRequestDataFromCommand($command);
+
+        return $this->sendRequestAndWaitForResponse(match ($method) {
+            'GET' => $client->get($url, $headers),
+            'POST' => $client->post($url, $headers, $this->encodePayload($payload)),
+            'DELETE' => $client->delete($url, $headers),
+        });
+    }
+
+    protected function sendRequestAndWaitForResponse(PromiseInterface $request): WebDriverResponse
+    {
+        $resolved = null;
+
+        $request->then(function($response) use (&$resolved) {
+            Loop::get()->futureTick(fn() => Loop::stop());
+            $resolved = $response;
+        });
+
+        while ($resolved === null) {
+            Loop::run();
+        }
+
+        return $this->mapAsyncResponseToWebDriverResponse($resolved);
+    }
+
+    protected function mapAsyncResponseToWebDriverResponse(ResponseInterface $response): WebDriverResponse
+    {
+        $value = null;
+        $message = null;
+        $session_id = null;
+        $status = 0;
+
+        $results = json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        if (is_array($results)) {
+            $value = Arr::get($results, 'value');
+            $message = Arr::get($results, 'message');
+            $session_id = is_array($value) && array_key_exists('sessionId',
+                $value) ? $value['sessionId'] : $results['sessionId'];
+            $status = Arr::get($results, 'status', 0);
+        }
+
+        if (is_array($value) && isset($value['error'])) {
+            WebDriverException::throwException($value['error'], $message, $results);
+        }
+
+        if ($status !== 0) {
+            WebDriverException::throwException($status, $message, $results);
+        }
+
+        return (new WebDriverResponse($session_id))->setStatus($status)->setValue($value);
+    }
+
+    protected function encodePayload(Collection $payload): string
+    {
+        // POST body must be valid JSON object, even if empty: https://www.w3.org/TR/webdriver/#processing-model
+        if ($payload->isEmpty()) {
+            return '{}';
+        }
+
+        return $payload->toJson();
+    }
+
+    /** @return array{0: string, 1: string, 2: array, 3: Collection} */
+    protected function extractRequestDataFromCommand(WebDriverCommand $command): array
+    {
+        [ 'url' => $path, 'method' => $method ] = $this->getCommandHttpOptions($command);
+
+        // Keys that are prefixed with ":" are URL parameters. All others are JSON payload data.
+        [ $parameters, $payload ] = collect($command->getParameters() ?? [])
+            ->put(':sessionId', (string) $command->getSessionID())
+            ->partition(fn($value, $key) => str_starts_with($key, ':'));
+
+        if ($payload->isNotEmpty() && $method !== 'POST') {
+            throw LogicException::forInvalidHttpMethod($path, $method, $payload->all());
+        }
+
+        $url = $this->url.$this->applyParametersToPath($parameters, $path);
+        $method = strtoupper($method);
+        $headers = $this->defaultHeaders($method);
+
+        return [ $url, $method, $headers, $payload ];
+    }
+
+    protected function applyParametersToPath(Collection $parameters, string $url): string
+    {
+        return str_replace($parameters->keys(), $parameters->values(), $url);
+    }
+
+    protected function defaultHeaders(string $method): array
+    {
+        $headers = collect(static::DEFAULT_HTTP_HEADERS)->mapWithKeys(function($header) {
+                [ $key, $value ] = explode(':', $header, 2);
+
+                return [ $key => $value ];
+            });
+
+        if (in_array($method, [ 'POST', 'PUT' ], true)) {
+            $headers->put('Expect', '');
+        }
+
+        return $headers->all();
+    }
+}
