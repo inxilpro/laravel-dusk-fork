@@ -1,6 +1,10 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.10...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.11...8.x)
+
+## [v8.2.11](https://github.com/laravel/dusk/compare/v8.2.10...v8.2.11) - 2024-11-07
+
+* Update MakesAssertions.php by [@kenny08gt](https://github.com/kenny08gt) in https://github.com/laravel/dusk/pull/1149
 
 ## [v8.2.10](https://github.com/laravel/dusk/compare/v8.2.9...v8.2.10) - 2024-10-22
 
