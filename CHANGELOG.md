@@ -1,6 +1,10 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.12...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.13...8.x)
+
+## [v8.2.13](https://github.com/laravel/dusk/compare/v8.2.12...v8.2.13) - 2025-01-06
+
+* [8.x] Behaviour change on assertAttributeDoesntContain by [@F2210](https://github.com/F2210) in https://github.com/laravel/dusk/pull/1154
 
 ## [v8.2.12](https://github.com/laravel/dusk/compare/v8.2.11...v8.2.12) - 2024-11-21
 
