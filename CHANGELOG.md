@@ -1,6 +1,11 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.14...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.0...8.x)
+
+## [v8.3.0](https://github.com/laravel/dusk/compare/v8.2.14...v8.3.0) - 2025-02-11
+
+* Add assertCount() method by [@ktsm-th](https://github.com/ktsm-th) in https://github.com/laravel/dusk/pull/1158
+* Supports PHPUnit 12.0 by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1156
 
 ## [v8.2.14](https://github.com/laravel/dusk/compare/v8.2.13...v8.2.14) - 2025-01-26
 
