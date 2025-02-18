@@ -1,6 +1,10 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.0...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.1...8.x)
+
+## [v8.3.1](https://github.com/laravel/dusk/compare/v8.3.0...v8.3.1) - 2025-02-12
+
+* [8.x] Update jQuery to `3.7.1` by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1165
 
 ## [v8.3.0](https://github.com/laravel/dusk/compare/v8.2.14...v8.3.0) - 2025-02-11
 
