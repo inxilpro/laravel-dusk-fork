@@ -411,7 +411,7 @@ class WaitsForElementsTest extends TestCase
     {
         $driver = m::mock(WebDriver::class);
         $driver->shouldReceive('executeScript')
-            ->times(3)
+            ->times(1)
             ->andReturnTrue();
         $driver->shouldReceive('wait')->with(2, 100)->andReturnUsing(function ($seconds, $interval) use ($driver) {
             return new WebDriverWait($driver, $seconds, $interval);
@@ -420,8 +420,8 @@ class WaitsForElementsTest extends TestCase
         $link = 'https://laravel.com/docs/8.x/dusk';
 
         $script = <<<JS
-            var link = jQuery.find(`body a:contains('{$link}')`);
-            return link.length > 0 && jQuery(link).is(':visible');
+            var link = window.document.querySelectorAll(`body a:contains('{$link}'):visible`);
+            return link.length > 0;
 JS;
 
         $driver->shouldReceive('executeScript')
