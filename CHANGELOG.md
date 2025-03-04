@@ -1,6 +1,10 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.1...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.2...8.x)
+
+## [v8.3.2](https://github.com/laravel/dusk/compare/v8.3.1...v8.3.2) - 2025-02-20
+
+* Disable smooth scrolling in TestCase by [@ziadoz](https://github.com/ziadoz) in https://github.com/laravel/dusk/pull/1167
 
 ## [v8.3.1](https://github.com/laravel/dusk/compare/v8.3.0...v8.3.1) - 2025-02-12
 
