@@ -683,15 +683,7 @@ class MakesAssertionsTest extends TestCase
 
         $browser->assertAttributeDoesntContain('foo', 'bar', 'class-c');
 
-        try {
-            $browser->assertAttributeDoesntContain('foo', 'bar', 'class-c');
-            $this->fail();
-        } catch (ExpectationFailedException $e) {
-            $this->assertStringContainsString(
-                'Did not see expected attribute [bar] within element [Foo].',
-                $e->getMessage()
-            );
-        }
+        $browser->assertAttributeDoesntContain('foo', 'bar', 'class-c');
 
         try {
             $browser->assertAttributeDoesntContain('foo', 'bar', 'class-1');
@@ -1260,6 +1252,32 @@ class MakesAssertionsTest extends TestCase
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString(
                 'The attribute for key [users] is not an array.',
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function test_assert_count()
+    {
+        $driver = m::mock(stdClass::class);
+
+        $element1 = m::mock(RemoteWebElement::class);
+        $element2 = m::mock(RemoteWebElement::class);
+
+        $resolver = m::mock(stdClass::class);
+        $resolver->shouldReceive('format')->with('foo')->andReturn('body foo');
+        $resolver->shouldReceive('all')->with('foo')->andReturn([$element1, $element2]);
+
+        $browser = new Browser($driver, $resolver);
+
+        $browser->assertCount('foo', 2);
+
+        try {
+            $browser->assertCount('foo', 3);
+            $this->fail();
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Expected element [body foo] exactly 3 times.',
                 $e->getMessage()
             );
         }

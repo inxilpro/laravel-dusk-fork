@@ -1,6 +1,59 @@
 # Release Notes
 
-## [Unreleased](https://github.com/laravel/dusk/compare/v8.2.5...8.x)
+## [Unreleased](https://github.com/laravel/dusk/compare/v8.3.2...8.x)
+
+## [v8.3.2](https://github.com/laravel/dusk/compare/v8.3.1...v8.3.2) - 2025-02-20
+
+* Disable smooth scrolling in TestCase by [@ziadoz](https://github.com/ziadoz) in https://github.com/laravel/dusk/pull/1167
+
+## [v8.3.1](https://github.com/laravel/dusk/compare/v8.3.0...v8.3.1) - 2025-02-12
+
+* [8.x] Update jQuery to `3.7.1` by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1165
+
+## [v8.3.0](https://github.com/laravel/dusk/compare/v8.2.14...v8.3.0) - 2025-02-11
+
+* Add assertCount() method by [@ktsm-th](https://github.com/ktsm-th) in https://github.com/laravel/dusk/pull/1158
+* Supports PHPUnit 12.0 by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1156
+
+## [v8.2.14](https://github.com/laravel/dusk/compare/v8.2.13...v8.2.14) - 2025-01-26
+
+* Supports Laravel 12 by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1157
+
+## [v8.2.13](https://github.com/laravel/dusk/compare/v8.2.12...v8.2.13) - 2025-01-06
+
+* [8.x] Behaviour change on assertAttributeDoesntContain by [@F2210](https://github.com/F2210) in https://github.com/laravel/dusk/pull/1154
+
+## [v8.2.12](https://github.com/laravel/dusk/compare/v8.2.11...v8.2.12) - 2024-11-21
+
+* [8.x] Supports PHP 8.4 by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1131
+
+## [v8.2.11](https://github.com/laravel/dusk/compare/v8.2.10...v8.2.11) - 2024-11-07
+
+* Update MakesAssertions.php by [@kenny08gt](https://github.com/kenny08gt) in https://github.com/laravel/dusk/pull/1149
+
+## [v8.2.10](https://github.com/laravel/dusk/compare/v8.2.9...v8.2.10) - 2024-10-22
+
+* fix: removed Laravel\Dusk\Page import from dusk:page stub by [@fxnm](https://github.com/fxnm) in https://github.com/laravel/dusk/pull/1145
+* [8.x] CI Improvements by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1147
+* [8.x] Allow to dynamically add `Tests\Browsers\Page\Page` or `Laravel\Dusk\Page` via `dusk:page` command by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1148
+
+## [v8.2.9](https://github.com/laravel/dusk/compare/v8.2.8...v8.2.9) - 2024-10-14
+
+* check for directory existence when storing console log or storing source, if it does not exist create it by [@ssanko](https://github.com/ssanko) in https://github.com/laravel/dusk/pull/1143
+
+## [v8.2.8](https://github.com/laravel/dusk/compare/v8.2.7...v8.2.8) - 2024-10-04
+
+* [8.x] Adds Pest 3 support by [@nunomaduro](https://github.com/nunomaduro) in https://github.com/laravel/dusk/pull/1141
+
+## [v8.2.7](https://github.com/laravel/dusk/compare/v8.2.6...v8.2.7) - 2024-09-27
+
+* Ignore Symfony console default options by [@ziadoz](https://github.com/ziadoz) in https://github.com/laravel/dusk/pull/1133
+* Update logo to support dark/light theme by [@milewski](https://github.com/milewski) in https://github.com/laravel/dusk/pull/1134
+
+## [v8.2.6](https://github.com/laravel/dusk/compare/v8.2.5...v8.2.6) - 2024-09-24
+
+* Account for `preg_split()` also returning `false` by [@u01jmg3](https://github.com/u01jmg3) in https://github.com/laravel/dusk/pull/1130
+* [8.x] Use Artisan Console View Components by [@crynobone](https://github.com/crynobone) in https://github.com/laravel/dusk/pull/1132
 
 ## [v8.2.5](https://github.com/laravel/dusk/compare/v8.2.4...v8.2.5) - 2024-08-26
 
