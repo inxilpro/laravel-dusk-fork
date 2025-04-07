@@ -2,7 +2,6 @@
 
 namespace Laravel\Dusk\Http;
 
-use Exception;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,6 +19,8 @@ use React\Socket\ConnectionInterface;
 use React\Socket\SocketServer;
 use React\Stream\ReadableResourceStream;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Mime\MimeTypes;
 use Throwable;
 
@@ -27,7 +28,7 @@ class ProxyServer
 {
     protected SocketServer $socket;
 
-    protected int $in_flight = 0;
+    protected int $requestsInFlight = 0;
 
     protected array $connections = [];
 
@@ -36,8 +37,9 @@ class ProxyServer
     public function __construct(
         protected HttpKernel $kernel,
         protected LoopInterface $loop,
+        protected HttpFoundationFactory $factory,
         protected string $host = '127.0.0.1',
-        protected int $port = 8088,
+        protected int $port = 8099,
     ) {
     }
 
@@ -49,26 +51,27 @@ class ProxyServer
 
         $this->socket = new SocketServer("{$this->host}:{$this->port}", [], $this->loop);
 
-        $this->socket->on('connection', function(ConnectionInterface $connection) {
-            $this->connections[] = (object) [
-                'active'     => false,
-                'connection' => $connection,
-            ];
+        $this->socket->on('connection', function (ConnectionInterface $connection) {
+            $this->connections[] = $connection;
         });
 
-        $server = new ReactHttpServer($this->loop, new StreamingRequestMiddleware(),
-            new LimitConcurrentRequestsMiddleware(100), new RequestBodyBufferMiddleware(32 * 1024 * 1024), // 32 MB
-            new RequestBodyParserMiddleware(32 * 1024 * 1024, 100), // 32 MB (these need to be configurable)
-            $this->handleRequest(...));
-
-        $server->on('error', function(Exception $exception) {
-            $this->socket->close();
-            throw $exception;
-        });
+        $server = new ReactHttpServer(
+            $this->loop,
+            new StreamingRequestMiddleware(),
+            new LimitConcurrentRequestsMiddleware(100),
+            new RequestBodyBufferMiddleware(32 * 1024 * 1024), // 32 MB
+            new RequestBodyParserMiddleware(32 * 1024 * 1024, 100), // 32 MB
+            $this->handleRequest(...),
+        );
 
         $server->listen($this->socket);
 
         return $this;
+    }
+
+    public function url(): string
+    {
+        return "http://{$this->host}:{$this->port}";
     }
 
     protected function handleRequest(ServerRequestInterface $psr_request): Promise|Response
@@ -79,11 +82,11 @@ class ProxyServer
         }
 
         $promise = $this->runRequestThroughKernel(
-            Request::createFromBase((new HttpFoundationFactory())->createRequest($psr_request))
+            Request::createFromBase($this->factory->createRequest($psr_request)),
         );
 
         // Handle exception
-        $promise->catch(function(Throwable $exception) {
+        $promise->catch(function (Throwable $exception) {
             return Response::plaintext($exception->getMessage()."\n".$exception->getTraceAsString())
                 ->withStatus(Response::STATUS_INTERNAL_SERVER_ERROR);
         });
@@ -93,35 +96,47 @@ class ProxyServer
 
     protected function runRequestThroughKernel(Request $request): Promise
     {
-        $this->in_flight++;
+        $this->requestsInFlight++;
 
-        return new Promise(function(callable $resolve) use ($request) {
+        return new Promise(function (callable $resolve) use ($request) {
             $this->loop->futureTick(fn() => $this->loop->stop());
 
             $response = $this->kernel->handle($request);
 
+            $resolve(new Response(
+                status: $response->getStatusCode(),
+                headers: $this->normalizeResponseHeaders($response->headers),
+                body: $this->getResponseContent($response),
+                version: $response->getProtocolVersion(),
+            ));
+
             $this->kernel->terminate($request, $response);
 
-            $resolve(new Response(status: $response->getStatusCode(), headers: value(function() use ($response) {
-                $headers = $response->headers->all();
-
-                if ( ! empty($cookies = $response->headers->getCookies())) {
-                    $headers['Set-Cookie'] = [];
-                    foreach ($cookies as $cookie) {
-                        $headers['Set-Cookie'][] = $cookie->__toString();
-                    }
-                }
-
-                return $headers;
-            }), body: value(function() use ($response) {
-                ob_start();
-                $response->sendContent();
-
-                return ob_get_clean();
-            }), version: $response->getProtocolVersion()));
-
-            $this->in_flight--;
+            $this->requestsInFlight--;
         });
+    }
+
+    protected function getResponseContent(SymfonyResponse $response): string
+    {
+        ob_start();
+
+        $response->sendContent();
+
+        return ob_get_clean();
+    }
+
+    protected function normalizeResponseHeaders(ResponseHeaderBag $bag): array
+    {
+        $headers = $bag->all();
+
+        if (!empty($cookies = $bag->getCookies())) {
+            $headers['Set-Cookie'] = [];
+            foreach ($cookies as $cookie) {
+                $headers['Set-Cookie'][] = (string) $cookie;
+            }
+        }
+
+        return $headers;
     }
 
     protected function staticResponse(ServerRequestInterface $psr_request): ?Promise
@@ -134,25 +149,26 @@ class ProxyServer
 
         $filepath = public_path($path);
 
-        if (file_exists($filepath) && ! is_dir($filepath)) {
-            $this->in_flight++;
+        if (file_exists($filepath) && !is_dir($filepath)) {
+            $this->requestsInFlight++;
 
-            return new Promise(function(callable $resolve) use ($filepath) {
+            return new Promise(function (callable $resolve) use ($filepath) {
                 $resolve(new Response(status: 200, headers: [
-                            'Content-Type' => match (pathinfo($filepath, PATHINFO_EXTENSION)) {
-                                'css' => 'text/css',
-                                'js' => 'application/javascript',
-                                'png' => 'image/png',
-                                'jpg', 'jpeg' => 'image/jpeg',
-                                'svg' => 'image/svg+xml',
-                                'woff' => 'font/woff',
-                                'woff2' => 'font/woff2',
-                                'eot' => 'application/vnd.ms-fontobject',
-                                'ttf' => 'font/ttf',
-                                default => (new MimeTypes())->guessMimeType($filepath),
-                            },
-                        ], body: new ReadableResourceStream(fopen($filepath, 'r'))));
-                $this->in_flight--;
+                    'Content-Type' => match (pathinfo($filepath, PATHINFO_EXTENSION)) {
+                        'css' => 'text/css',
+                        'js' => 'application/javascript',
+                        'png' => 'image/png',
+                        'jpg', 'jpeg' => 'image/jpeg',
+                        'svg' => 'image/svg+xml',
+                        'woff' => 'font/woff',
+                        'woff2' => 'font/woff2',
+                        'eot' => 'application/vnd.ms-fontobject',
+                        'ttf' => 'font/ttf',
+                        default => (new MimeTypes())->guessMimeType($filepath),
+                    },
+                ], body: new ReadableResourceStream(fopen($filepath, 'r'))));
+
+                $this->requestsInFlight--;
             });
         }
 
@@ -167,11 +183,12 @@ class ProxyServer
 
         $this->flushing = true;
 
-        $this->loop->addPeriodicTimer(0.1, function(TimerInterface $timer) {
-            if ($this->in_flight === 0) {
+        $this->loop->addPeriodicTimer(0.1, function (TimerInterface $timer) {
+            if ($this->requestsInFlight === 0) {
                 foreach ($this->connections as $connection) {
-                    $connection->connection->close();
+                    $connection->close();
                 }
+                $this->connections = [];
                 $this->socket->close();
                 $this->loop->cancelTimer($timer);
             }

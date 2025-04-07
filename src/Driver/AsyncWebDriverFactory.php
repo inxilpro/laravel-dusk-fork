@@ -17,24 +17,9 @@ class AsyncWebDriverFactory
 
     protected string $session_id;
 
-    public static function make(
-        string $selenium_server_url = 'http://localhost:9515',
-        DesiredCapabilities|array|null $desired_capabilities = null,
-        ?int $connection_timeout_in_ms = null,
-        ?int $request_timeout_in_ms = null,
-        ?string $http_proxy = null,
-        ?int $http_proxy_port = null,
-        ?DesiredCapabilities $required_capabilities = null,
-    ): AsyncWebDriver
-    {
-        $factory = new static(
-            $selenium_server_url, $desired_capabilities, $connection_timeout_in_ms,
-            $request_timeout_in_ms, $http_proxy, $http_proxy_port, $required_capabilities
-        );
-
-        return $factory();
-    }
-
+    /**
+     * Construct a new factory instance.
+     */
 	public function __construct(
 		protected string $selenium_server_url = 'http://localhost:9515',
         DesiredCapabilities|array|null $desired_capabilities = null,
@@ -53,7 +38,12 @@ class AsyncWebDriverFactory
         };
 	}
 
-    public function __invoke(): AsyncWebDriver
+    /**
+     * Configure AsyncWebDriver parameters via factory.
+     *
+     * @return array{0: AsyncCommandExecutor, 1: string, 2: DesiredCapabilities, 3: bool}
+     */
+    public function __invoke(): array
     {
         $this->initializeSession();
 
@@ -61,9 +51,14 @@ class AsyncWebDriverFactory
             new AsyncCommandExecutor($this->selenium_server_url, $this->http_proxy, $this->http_proxy_port)
         );
 
-        return new AsyncWebDriver($executor, $this->session_id, $this->session_capabilities, $this->is_w3c_compliant);
+        return [$executor, $this->session_id, $this->session_capabilities, $this->is_w3c_compliant];
     }
 
+    /**
+     * Initialize the web driver session synchronously.
+     *
+     * @return void
+     */
     protected function initializeSession(): void
     {
         $sync_executor = $this->configureExecutor(
@@ -82,6 +77,12 @@ class AsyncWebDriverFactory
         $this->session_id = $response->getSessionID();
     }
 
+    /**
+     * Apply timeouts/configuration to the command executor.
+     *
+     * @param  HttpCommandExecutor  $executor
+     * @return HttpCommandExecutor
+     */
 	protected function configureExecutor(HttpCommandExecutor $executor): HttpCommandExecutor {
 		if ($this->connection_timeout_in_ms !== null) {
 			$executor->setConnectionTimeout($this->connection_timeout_in_ms);
@@ -94,6 +95,11 @@ class AsyncWebDriverFactory
 		return $executor;
 	}
 
+    /**
+     * Convert desired/required capabilities into session parameters.
+     *
+     * @return array
+     */
 	protected function parameters(): array {
 		// Set W3C parameters first
 		$parameters = [

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Dusk\Http\ProxyServer;
 use React\EventLoop\Loop;
+use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 
 class DuskServiceProvider extends ServiceProvider
 {
@@ -16,6 +17,9 @@ class DuskServiceProvider extends ServiceProvider
             return new ProxyServer(
                 kernel: $app->make(HttpKernel::class),
                 loop: Loop::get(),
+                factory: $app->make(HttpFoundationFactory::class),
+                host: config('dusk.proxy.host', '127.0.0.1'),
+                port: config('dusk.proxy.port', $this->findOpenPort(...)),
             );
         });
     }
@@ -62,5 +66,19 @@ class DuskServiceProvider extends ServiceProvider
                 Console\ChromeDriverCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Find an available port to listen on.
+     *
+     * @return int
+     */
+    protected function findOpenPort(): int
+    {
+        $sock = socket_create_listen(0);
+        socket_getsockname($sock, $addr, $port);
+        socket_close($sock);
+
+        return $port;
     }
 }
