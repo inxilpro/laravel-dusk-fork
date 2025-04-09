@@ -13,7 +13,9 @@ use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
 use React\Http\Browser as ReactHttpClient;
+use React\Http\Message\ResponseException;
 use React\Promise\PromiseInterface;
+use Throwable;
 
 class AsyncCommandExecutor extends HttpCommandExecutor
 {
@@ -25,7 +27,7 @@ class AsyncCommandExecutor extends HttpCommandExecutor
      */
     public function execute(WebDriverCommand $command): WebDriverResponse
     {
-        $client = new ReactHttpClient();
+        $client = (new ReactHttpClient())->withRejectErrorResponse(false);
 
         [$url, $method, $headers, $payload] = $this->extractRequestDataFromCommand($command);
 
@@ -52,6 +54,14 @@ class AsyncCommandExecutor extends HttpCommandExecutor
         $request->then(function ($response) use (&$resolved) {
             Loop::get()->futureTick(fn() => Loop::stop());
             $resolved = $response;
+        });
+
+        $request->catch(function (Throwable $exception) use (&$resolved) {
+            if ($resolved instanceof ResponseException) {
+                $resolved = $exception->getResponse();
+            } else {
+                throw $exception;
+            }
         });
 
         while ($resolved === null) {
