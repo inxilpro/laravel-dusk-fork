@@ -28,8 +28,11 @@ class DuskServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(UrlGenerator::class, function (Application $app) {
+            $proxy = $app->make(ProxyServer::class);
+
             return new UrlGenerator(
-                endpoint: $app->make(ProxyServer::class)->url(),
+                proxyHostname: $proxy->host,
+                proxyPort: $proxy->port,
                 appHost: parse_url(config('app.url'), PHP_URL_HOST),
                 url: $app->make(UrlGeneratorContract::class),
             );

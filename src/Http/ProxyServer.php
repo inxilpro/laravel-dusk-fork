@@ -10,7 +10,6 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\TimerInterface;
 use React\Http\HttpServer as ReactHttpServer;
 use React\Http\Message\Response;
-use React\Http\Message\Uri;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
@@ -68,8 +67,8 @@ class ProxyServer
         protected HttpKernel $kernel,
         protected LoopInterface $loop,
         protected HttpFoundationFactory $factory,
-        protected string $host = '127.0.0.1',
-        protected int $port = 8099,
+        public readonly string $host = '127.0.0.1',
+        public readonly int $port = 8099,
     ) {
     }
 
@@ -103,32 +102,22 @@ class ProxyServer
     }
 
     /**
-     * Get the proxy server base URL.
-     *
-     * @return string
-     */
-    public function url(): string
-    {
-        return "http://{$this->host}:{$this->port}";
-    }
-
-    /**
      * Handle the request.
      *
-     * @param  ServerRequestInterface  $psr_request
+     * @param  ServerRequestInterface  $request
      * @return Promise|Response
      */
-    protected function handleRequest(ServerRequestInterface $psr_request): Promise|Response
+    protected function handleRequest(ServerRequestInterface $request): Promise|Response
     {
-        $psr_request = $psr_request->withUri(new Uri($psr_request->getQueryParams()['url']));
+        $request = $this->rewriteRequestUri($request);
 
         // If this is just a request for a static asset, just stream that content back
-        if ($static_response = $this->staticResponse($psr_request)) {
+        if ($static_response = $this->staticResponse($request)) {
             return $static_response;
         }
 
         $promise = $this->runRequestThroughKernel(
-            Request::createFromBase($this->factory->createRequest($psr_request)),
+            Request::createFromBase($this->factory->createRequest($request)),
         );
 
         // Handle exception
@@ -138,6 +127,21 @@ class ProxyServer
         });
 
         return $promise;
+    }
+
+    protected function rewriteRequestUri(ServerRequestInterface $request): ServerRequestInterface
+    {
+        $uri = $request->getUri();
+
+        $params = $request->getQueryParams();
+
+        [$scheme, $host, $port] = json_decode(base64_decode($params['__dusk']));
+
+        unset($params['__dusk']);
+
+        return $request
+            ->withUri($uri->withScheme($scheme)->withHost($host)->withPort($port)->withQuery(http_build_query($params)))
+            ->withQueryParams($params);
     }
 
     /**

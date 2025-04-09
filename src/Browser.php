@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use Laravel\Dusk\Http\ProxyServer;
 use Laravel\Dusk\Http\UrlGenerator;
+use React\EventLoop\Loop;
 
 class Browser
 {
@@ -680,7 +681,16 @@ class Browser
      */
     public function pause($milliseconds)
     {
-        usleep($milliseconds * 1000);
+        $sleeping = true;
+
+        Loop::addTimer($milliseconds / 1000, function () use (&$sleeping) {
+            $sleeping = false;
+            Loop::stop();
+        });
+
+        while ($sleeping) {
+            Loop::run();
+        }
 
         return $this;
     }

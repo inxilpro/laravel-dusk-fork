@@ -3,7 +3,10 @@
 namespace Laravel\Dusk\Http;
 
 use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ForwardsCalls;
+use React\Http\Message\Uri;
 
 /**
  * @method string query(string $path, array $query = [], mixed $extra = [], bool|null $secure = null)
@@ -13,7 +16,8 @@ class UrlGenerator implements UrlGeneratorContract
     use ForwardsCalls;
 
     public function __construct(
-        protected string $endpoint,
+        protected string $proxyHostname,
+        protected int $proxyPort,
         protected string $appHost,
         protected UrlGeneratorContract $url,
     ) {
@@ -78,11 +82,20 @@ class UrlGenerator implements UrlGeneratorContract
     {
         // TODO: Provide a way to register a callback that allows for more complex matching
 
-        $host = parse_url($url, PHP_URL_HOST);
+        $uri = new Uri($url);
 
-        return $host === $this->appHost
-            ? $this->endpoint.'?url='.urlencode($url)
-            : $url;
+        if ($uri->getHost() !== $this->appHost) {
+            return $url;
+        }
+
+        $data = [$uri->getScheme(), $uri->getHost(), $uri->getPort()];
+        $payload = urlencode(base64_encode(json_encode($data)));
+        $query = $uri->getQuery().($uri->getQuery() ? '&' : '').'__dusk='.urlencode($payload);
+
+        return (string) $uri
+            ->withHost($this->proxyHostname)
+            ->withPort($this->proxyPort)
+            ->withQuery($query);
     }
 
     public function __call(string $name, array $arguments)
