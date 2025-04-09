@@ -10,6 +10,7 @@ use React\EventLoop\LoopInterface;
 use React\EventLoop\TimerInterface;
 use React\Http\HttpServer as ReactHttpServer;
 use React\Http\Message\Response;
+use React\Http\Message\Uri;
 use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
 use React\Http\Middleware\RequestBodyBufferMiddleware;
 use React\Http\Middleware\RequestBodyParserMiddleware;
@@ -119,6 +120,8 @@ class ProxyServer
      */
     protected function handleRequest(ServerRequestInterface $psr_request): Promise|Response
     {
+        $psr_request = $psr_request->withUri(new Uri($psr_request->getQueryParams()['url']));
+
         // If this is just a request for a static asset, just stream that content back
         if ($static_response = $this->staticResponse($psr_request)) {
             return $static_response;

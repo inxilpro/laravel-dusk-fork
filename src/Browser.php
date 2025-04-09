@@ -11,6 +11,7 @@ use Facebook\WebDriver\WebDriverPoint;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use Laravel\Dusk\Http\ProxyServer;
+use Laravel\Dusk\Http\UrlGenerator;
 
 class Browser
 {
@@ -183,8 +184,8 @@ class Browser
             $url = static::$baseUrl.'/'.ltrim($url, '/');
         }
 
-        // Force our proxy server — this needs to be improved
-        $url = str_replace(rtrim(static::$baseUrl, '/'), app(ProxyServer::class)->url(), $url);
+        // Pass the request through our proxy
+        $url = app(UrlGenerator::class)->proxy($url);
 
         $this->driver->navigate()->to($url);
 

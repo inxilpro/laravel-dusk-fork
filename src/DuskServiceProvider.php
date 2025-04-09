@@ -3,9 +3,13 @@
 namespace Laravel\Dusk;
 
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
+use Illuminate\Foundation\Application;
+use Illuminate\Routing\RouteCollectionInterface;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Dusk\Http\ProxyServer;
+use Laravel\Dusk\Http\UrlGenerator;
 use React\EventLoop\Loop;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 
@@ -20,6 +24,14 @@ class DuskServiceProvider extends ServiceProvider
                 factory: $app->make(HttpFoundationFactory::class),
                 host: config('dusk.proxy.host', '127.0.0.1'),
                 port: config('dusk.proxy.port', $this->findOpenPort(...)),
+            );
+        });
+
+        $this->app->singleton(UrlGenerator::class, function (Application $app) {
+            return new UrlGenerator(
+                endpoint: $app->make(ProxyServer::class)->url(),
+                appHost: parse_url(config('app.url'), PHP_URL_HOST),
+                url: $app->make(UrlGeneratorContract::class),
             );
         });
     }
